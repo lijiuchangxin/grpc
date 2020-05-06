@@ -1,34 +1,90 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"google.golang.org/grpc"
-	"grpc/service"
-	"net"
+	"google.golang.org/grpc/credentials"
+	"grpc/server/service"
+	"io/ioutil"
+	"net/http"
 )
 
 func main() {
 
-	rpcServer := grpc.NewServer()
+	//creds, _ := credentials.NewClientTLSFromFile("keys/server.crt", "keys/server.key")
+	//rpcServer := grpc.NewServer(grpc.Creds(creds))
+
+	//rpcServer := grpc.NewServer()
+
+	// 加载密钥对
+	//cert, _ := tls.LoadX509KeyPair("cert/server.pem", "cert/server.key")
+	//// 创建证书池
+	//certPool := x509.NewCertPool()
+	//ca, _ := ioutil.ReadFile("cert/ca.pem")
+	//certPool.AppendCertsFromPEM(ca)
+	//
+	//creds := credentials.NewTLS(&tls.Config{
+	//	Certificates:	[]tls.Certificate{cert},  			// 服务端证书
+	//	ClientAuth: 	tls.RequireAndVerifyClientCert,		// 用于双向验证
+	//	ClientCAs:		certPool,							// 指定客户端证书池
+	//
+	//})
+	//
+	//rpcServer := grpc.NewServer(grpc.Creds(creds))
+	//
+	//
+	//service.RegisterProdServiceServer(rpcServer, new(service.ProdService))
+	//
+	////listen, _ := net.Listen("tcp", ":8081")
+	////rpcServer.Serve(listen)
+	//
+	//mux := http.NewServeMux()
+	//mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+	//	fmt.Println(request)
+	//	rpcServer.ServeHTTP(writer, request)
+	//})
+	//
+	//httpServer := &http.Server{
+	//	Addr:    ":8081",
+	//	Handler: mux,
+	//}
+	////_ = httpServer.ListenAndServeTLS("keys/server.crt", "keys/server.key")
+	//
+	//a := httpServer.ListenAndServeTLS("cert/server.pem", "cert/server.key")
+	//fmt.Println(a)
+
+
+	// 加载密钥对
+	cred, _ := tls.LoadX509KeyPair("server/cert/server.pem", "server/cert/server.key")
+
+	// 证书池
+	credPool := x509.NewCertPool()
+	ca, _ := ioutil.ReadFile("cert/ca.pem")
+	credPool.AppendCertsFromPEM(ca)
+
+	creds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{cred},
+		ClientCAs: credPool,
+		ClientAuth:tls.RequireAndVerifyClientCert,
+	})
+
+	rpcServer := grpc.NewServer(grpc.Creds(creds))
 	service.RegisterProdServiceServer(rpcServer, new(service.ProdService))
 
-	listen, err := net.Listen("tcp", ":8081")
-	fmt.Println(err)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		rpcServer.ServeHTTP(writer, request)
+	})
 
-	rpcServer.Serve(listen)
+	httpServer := http.Server{
+		Addr: ":8081",
+		Handler: mux,
+	}
 
-	//listener, err := net.Listen("tcp", "8081")
-	//if err != nil {
-	//	log.Fatalf("failed to listen: %v", err)
-	//}
-	//log.Printf("listen on: %s\n", "8801")
-	//
-	//server := grpc.NewServer()
-	//
-	//service.RegisterProdServiceServer(server, &service.ProdService{})
-	//
-	//
-	//if err := server.Serve(listener); err != nil {
-	//	log.Fatalf("failed to serve: %v", err)
-	//}
+	a := httpServer.ListenAndServeTLS("server/cert/server.pem", "server/cert/server.key")
+	fmt.Println(a)
+
+
 }
