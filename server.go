@@ -18,73 +18,39 @@ func main() {
 
 	//rpcServer := grpc.NewServer()
 
-	// 加载密钥对
-	//cert, _ := tls.LoadX509KeyPair("cert/server.pem", "cert/server.key")
-	//// 创建证书池
-	//certPool := x509.NewCertPool()
-	//ca, _ := ioutil.ReadFile("cert/ca.pem")
-	//certPool.AppendCertsFromPEM(ca)
-	//
-	//creds := credentials.NewTLS(&tls.Config{
-	//	Certificates:	[]tls.Certificate{cert},  			// 服务端证书
-	//	ClientAuth: 	tls.RequireAndVerifyClientCert,		// 用于双向验证
-	//	ClientCAs:		certPool,							// 指定客户端证书池
-	//
-	//})
-	//
-	//rpcServer := grpc.NewServer(grpc.Creds(creds))
-	//
-	//
-	//service.RegisterProdServiceServer(rpcServer, new(service.ProdService))
-	//
-	////listen, _ := net.Listen("tcp", ":8081")
-	////rpcServer.Serve(listen)
-	//
-	//mux := http.NewServeMux()
-	//mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-	//	fmt.Println(request)
-	//	rpcServer.ServeHTTP(writer, request)
-	//})
-	//
-	//httpServer := &http.Server{
-	//	Addr:    ":8081",
-	//	Handler: mux,
-	//}
-	////_ = httpServer.ListenAndServeTLS("keys/server.crt", "keys/server.key")
-	//
-	//a := httpServer.ListenAndServeTLS("cert/server.pem", "cert/server.key")
-	//fmt.Println(a)
-
-
-	// 加载密钥对
-	cred, _ := tls.LoadX509KeyPair("server/cert/server.pem", "server/cert/server.key")
-
-	// 证书池
-	credPool := x509.NewCertPool()
+	//加载密钥对
+	cert, _ := tls.LoadX509KeyPair("server/cert/server.pem", "server/cert/server.key")
+	// 创建证书池
+	certPool := x509.NewCertPool()
 	ca, _ := ioutil.ReadFile("cert/ca.pem")
-	credPool.AppendCertsFromPEM(ca)
+	certPool.AppendCertsFromPEM(ca)
 
 	creds := credentials.NewTLS(&tls.Config{
-		Certificates: []tls.Certificate{cred},
-		ClientCAs: credPool,
-		ClientAuth:tls.RequireAndVerifyClientCert,
+		Certificates:	[]tls.Certificate{cert},  			// 服务端证书
+		ClientAuth: 	tls.RequireAndVerifyClientCert,		// 用于双向验证
+		ClientCAs:		certPool,							// 指定客户端证书池
+
 	})
 
 	rpcServer := grpc.NewServer(grpc.Creds(creds))
+
+
 	service.RegisterProdServiceServer(rpcServer, new(service.ProdService))
+	service.RegisterOderServiceServer(rpcServer, new(service.OrderService))
+	service.RegisterChatServer(rpcServer, new(service.Steamer))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println(request)
 		rpcServer.ServeHTTP(writer, request)
 	})
 
-	httpServer := http.Server{
-		Addr: ":8081",
+	httpServer := &http.Server{
+		Addr:    ":8081",
 		Handler: mux,
 	}
+	//_ = httpServer.ListenAndServeTLS("keys/server.crt", "keys/server.key")
 
 	a := httpServer.ListenAndServeTLS("server/cert/server.pem", "server/cert/server.key")
 	fmt.Println(a)
-
-
 }

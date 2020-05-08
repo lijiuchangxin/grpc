@@ -1,14 +1,70 @@
 syntax = "proto3";
 package service;
+import "google/protobuf/timestamp.proto";
+//import ""
+
+enum ProdAreas {
+    A=0;
+    B=1;
+    C=2;
+}
 
 message ProdRequest {
     int32 prod_id =1;   // 传入的商品id
+    ProdAreas prod_area=2;
 }
 
 message ProdResponse {
     int32 prod_stock = 1; // 商品库存
 }
 
-service ProdService {
-    rpc GetProdStock (ProdRequest) returns (ProdResponse);
+message QuerySize {
+    int32 size = 1; // 页尺寸
+}
+
+message ProdResponseList {
+    repeated ProdResponse prodres=1;
+}
+
+message ProdModel { // 商品模型
+    int32 prod_id = 1;
+    string prod_name = 2;
+    float prod_price = 3;
+}
+
+service ProdService {  // 返回一堆商品库存，使用了repeated修饰符
+    rpc GetProdStock (ProdRequest) returns (ProdResponse) {}
+    rpc GetProdStocks (QuerySize) returns (ProdResponseList) {}
+    rpc GetProdInfo (ProdRequest) returns (ProdModel) {}
+}
+
+
+
+message OrderMain {  // 主订单模型
+    int32 order_id = 1;
+    string order_no = 2;
+    int32 user_id = 3;
+    float order_money = 4;
+    google.protobuf.Timestamp order_time = 5;
+}
+
+message OrderResponse {
+    string status = 1;
+    string message = 2;
+}
+
+service OderService {
+    rpc NewOrder(OrderMain) returns (OrderResponse) {}
+}
+
+service Chat {
+    rpc BidStream(stream Request) returns (stream Response) {}
+}
+
+message Request {
+    string input = 1;
+}
+
+message Response {
+    string output = 1;
 }
