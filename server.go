@@ -56,9 +56,3 @@ func main() {
 }
 
 
-<<<<<<< HEAD
-// test
-// test2
-=======
-
->>>>>>> 61dc5001f53a0166748bef255dccb2ef924b416f
